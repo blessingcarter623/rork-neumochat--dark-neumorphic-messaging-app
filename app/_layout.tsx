@@ -6,6 +6,8 @@ import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator } from "react-native";
 import Colors from "@/constants/colors";
 import { useAuthStore } from "@/stores/authStore";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { trpc, trpcClient } from "@/lib/trpc";
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -13,6 +15,9 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+// Create a client
+const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -52,10 +57,14 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.dark.background }}>
-      <StatusBar style="light" />
-      <RootLayoutNav />
-    </View>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <View style={{ flex: 1, backgroundColor: Colors.dark.background }}>
+          <StatusBar style="light" />
+          <RootLayoutNav />
+        </View>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
 
