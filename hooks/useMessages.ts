@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { apiService } from "@/services/api";
+import { useAuthStore } from "@/stores/authStore";
 
 // Define types for our messages
 export interface Message {
@@ -18,7 +20,7 @@ export interface Chat {
   messages: Message[];
 }
 
-// Mock data for chats
+// Fallback mock data for development/offline mode
 const MOCK_CHATS: Record<string, Chat> = {
   "1": {
     id: "1",
@@ -85,44 +87,56 @@ export function useMessages(chatId: string) {
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated, user } = useAuthStore();
   
   useEffect(() => {
-    // Simulate API call to fetch messages
     const fetchMessages = async () => {
+      if (!isAuthenticated) return;
+      
       setLoading(true);
       try {
-        // In a real app, this would be an API call
-        const mockChat = MOCK_CHATS[chatId];
+        // Try to fetch from API first
+        const chatData = await apiService.getChatMessages(chatId);
+        setChat(chatData.chat);
+        setMessages(chatData.messages);
+      } catch (error) {
+        console.error("Error fetching messages from API:", error);
         
+        // Fallback to mock data for development
+        const mockChat = MOCK_CHATS[chatId];
         if (mockChat) {
           setChat(mockChat);
           setMessages(mockChat.messages);
         }
-      } catch (error) {
-        console.error("Error fetching messages:", error);
       } finally {
         setLoading(false);
       }
     };
     
     fetchMessages();
-  }, [chatId]);
+  }, [chatId, isAuthenticated]);
   
-  const sendMessage = (text: string) => {
-    if (!chat) return;
+  const sendMessage = async (text: string) => {
+    if (!chat || !isAuthenticated || !user) return;
     
     const newMessage: Message = {
       id: String(Date.now()),
       text,
-      sender: chat.isGroup ? { id: "2", name: "Marcus Johnson" } : "me",
+      sender: chat.isGroup ? { id: user.id, name: user.name } : "me",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     
+    // Optimistically update UI
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
     
-    // In a real app, you would send this to your API
-    console.log("Sending message:", newMessage);
+    try {
+      // Send to API
+      await apiService.sendMessage(chatId, text);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      // In a real app, you might want to show an error state or retry mechanism
+    }
     
     return newMessage;
   };
@@ -133,4 +147,54 @@ export function useMessages(chatId: string) {
     loading,
     sendMessage,
   };
+}
+
+// Hook for fetching all chats
+export function useChats() {
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    const fetchChats = async () => {
+      if (!isAuthenticated) return;
+      
+      setLoading(true);
+      try {
+        const chatsData = await apiService.getChats();
+        setChats(chatsData);
+      } catch (error) {
+        console.error("Error fetching chats:", error);
+        // Fallback to mock data
+        const mockChats = [
+          {
+            id: "1",
+            name: "Ofenste Tabane SG",
+            lastMessage: "The Department proposal looks promising...",
+            time: "5 min ago",
+            unread: 1,
+            avatar: "O",
+            isOnline: true,
+          },
+          {
+            id: "2",
+            name: "TTMBAH Leadership",
+            lastMessage: "You were added to the group",
+            time: "1 hour ago",
+            unread: 3,
+            avatar: "T",
+            isGroup: true,
+            participants: 8,
+          },
+        ];
+        setChats(mockChats);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchChats();
+  }, [isAuthenticated]);
+
+  return { chats, loading };
 }

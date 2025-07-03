@@ -1,83 +1,32 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import Colors from "@/constants/colors";
 import { Search, Plus } from "lucide-react-native";
 import { useState } from "react";
-
-// Mock data for chats
-const CHATS = [
-  {
-    id: "1",
-    name: "Ofenste Tabane SG",
-    lastMessage: "The Department proposal looks promising...",
-    time: "5 min ago",
-    unread: 1,
-    avatar: "O",
-    isOnline: true,
-  },
-  {
-    id: "2",
-    name: "TTMBAH Leadership",
-    lastMessage: "You were added to the group",
-    time: "1 hour ago",
-    unread: 3,
-    avatar: "T",
-    isGroup: true,
-    participants: 8,
-  },
-  {
-    id: "3",
-    name: "David Johnson",
-    lastMessage: "Let's discuss the project timeline tomorrow",
-    time: "2 hours ago",
-    unread: 0,
-    avatar: "D",
-    isOnline: false,
-  },
-  {
-    id: "4",
-    name: "Marketing Team",
-    lastMessage: "Sarah: I've updated the presentation slides",
-    time: "Yesterday",
-    unread: 0,
-    avatar: "M",
-    isGroup: true,
-    participants: 5,
-  },
-  {
-    id: "5",
-    name: "John Smith",
-    lastMessage: "Thanks for the information",
-    time: "Yesterday",
-    unread: 0,
-    avatar: "J",
-    isOnline: true,
-  },
-  {
-    id: "6",
-    name: "Amatyma Personal Group Chat",
-    lastMessage: "Michael: When is the next meeting?",
-    time: "2 days ago",
-    unread: 0,
-    avatar: "A",
-    isGroup: true,
-    participants: 12,
-  },
-];
+import { useChats } from "@/hooks/useMessages";
 
 export default function MessagesScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
+  const { chats, loading } = useChats();
 
   const filteredChats = activeTab === "all" 
-    ? CHATS 
+    ? chats 
     : activeTab === "personal" 
-      ? CHATS.filter(chat => !chat.isGroup) 
-      : CHATS.filter(chat => chat.isGroup);
+      ? chats.filter(chat => !chat.isGroup) 
+      : chats.filter(chat => chat.isGroup);
 
   const navigateToChat = (id: string) => {
     router.push(`/chat/${id}`);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={Colors.dark.tint} />
+      </View>
+    );
+  }
 
   return (
     <>
@@ -169,6 +118,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.dark.background,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerButton: {
     marginRight: 15,

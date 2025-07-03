@@ -3,8 +3,9 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { View } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import Colors from "@/constants/colors";
+import { useAuthStore } from "@/stores/authStore";
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
@@ -17,6 +18,8 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     // We can add custom fonts here if needed
   });
+
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
     if (error) {
@@ -35,6 +38,19 @@ export default function RootLayout() {
     return null;
   }
 
+  if (isLoading) {
+    return (
+      <View style={{ 
+        flex: 1, 
+        backgroundColor: Colors.dark.background,
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
+        <ActivityIndicator size="large" color={Colors.dark.tint} />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.dark.background }}>
       <StatusBar style="light" />
@@ -44,6 +60,8 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <Stack
       screenOptions={{
@@ -59,36 +77,44 @@ function RootLayoutNav() {
         },
       }}
     >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="chat/[id]" 
-        options={{ 
-          title: "Chat",
-          presentation: "card",
-        }} 
-      />
-      <Stack.Screen 
-        name="group/[id]" 
-        options={{ 
-          title: "Group",
-          presentation: "card",
-        }} 
-      />
-      <Stack.Screen 
-        name="meeting/[id]" 
-        options={{ 
-          title: "Meeting",
-          presentation: "fullScreenModal",
-          headerShown: false,
-        }} 
-      />
-      <Stack.Screen 
-        name="modal" 
-        options={{ 
-          presentation: "modal",
-          title: "Info",
-        }} 
-      />
+      {!isAuthenticated ? (
+        // Auth screens
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+      ) : (
+        // Main app screens
+        <>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="chat/[id]" 
+            options={{ 
+              title: "Chat",
+              presentation: "card",
+            }} 
+          />
+          <Stack.Screen 
+            name="group/[id]" 
+            options={{ 
+              title: "Group",
+              presentation: "card",
+            }} 
+          />
+          <Stack.Screen 
+            name="meeting/[id]" 
+            options={{ 
+              title: "Meeting",
+              presentation: "fullScreenModal",
+              headerShown: false,
+            }} 
+          />
+          <Stack.Screen 
+            name="modal" 
+            options={{ 
+              presentation: "modal",
+              title: "Info",
+            }} 
+          />
+        </>
+      )}
     </Stack>
   );
 }

@@ -1,9 +1,30 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { Stack } from "expo-router";
 import Colors from "@/constants/colors";
 import { Settings, Edit, Bell, Shield, HelpCircle, LogOut, ChevronRight } from "lucide-react-native";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function ProfileScreen() {
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: logout,
+        },
+      ]
+    );
+  };
+
   return (
     <>
       <Stack.Screen 
@@ -20,16 +41,22 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <View style={styles.profileImageContainer}>
-            <Text style={styles.profileImageText}>M</Text>
+            <Text style={styles.profileImageText}>
+              {user?.name?.charAt(0).toUpperCase() || "U"}
+            </Text>
             <TouchableOpacity style={styles.editButton}>
               <Edit size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Marcus Johnson</Text>
-            <Text style={styles.profileStatus}>Business Owner • Member since 2023</Text>
-            <Text style={styles.profileBio}>Entrepreneur, mentor, and community builder passionate about economic empowerment.</Text>
+            <Text style={styles.profileName}>{user?.name || "User Name"}</Text>
+            <Text style={styles.profileStatus}>
+              {user?.email} • Member since 2023
+            </Text>
+            <Text style={styles.profileBio}>
+              {user?.bio || "Entrepreneur, mentor, and community builder passionate about economic empowerment."}
+            </Text>
           </View>
         </View>
         
@@ -62,11 +89,13 @@ export default function ProfileScreen() {
           
           <View style={styles.businessContent}>
             <View style={styles.businessLogoContainer}>
-              <Text style={styles.businessLogoText}>MJ</Text>
+              <Text style={styles.businessLogoText}>
+                {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || "UB"}
+              </Text>
             </View>
             
             <View style={styles.businessInfo}>
-              <Text style={styles.businessName}>Johnson Consulting</Text>
+              <Text style={styles.businessName}>{user?.name} Consulting</Text>
               <Text style={styles.businessCategory}>Business Strategy • Johannesburg</Text>
               <Text style={styles.businessStats}>32 followers • 18 reviews</Text>
             </View>
@@ -107,7 +136,7 @@ export default function ProfileScreen() {
             <ChevronRight size={20} color={Colors.dark.subtext} />
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.settingsItem}>
+          <TouchableOpacity style={styles.settingsItem} onPress={handleLogout}>
             <View style={styles.settingsItemLeft}>
               <View style={[styles.settingsIconContainer, { backgroundColor: Colors.dark.tint }]}>
                 <LogOut size={20} color="#FFFFFF" />

@@ -1,94 +1,40 @@
 import { useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from "react-native";
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { Stack } from "expo-router";
 import Colors from "@/constants/colors";
 import { ArrowLeft, Video, Phone, MoreVertical, Send, Paperclip, Mic, Image as ImageIcon } from "lucide-react-native";
-import { useState, useEffect } from "react";
-
-// Mock data for chats
-const CHATS = {
-  "1": {
-    id: "1",
-    name: "Ofenste Tabane SG",
-    avatar: "O",
-    isOnline: true,
-    messages: [
-      {
-        id: "1",
-        text: "Good morning TTMBAH team. I've reviewed the proposal for The Department of Men's Mental Health and Wellness.",
-        sender: "them",
-        time: "9:15 AM",
-      },
-      {
-        id: "2",
-        text: "Good morning Secretary-General. Thank you for taking the time to review our comprehensive proposal.",
-        sender: "me",
-        time: "9:17 AM",
-      },
-      {
-        id: "3",
-        text: "The framework is impressive. The statistics on men's mental health crisis are concerning and your proposed solutions are well-structured.",
-        sender: "them",
-        time: "9:20 AM",
-      },
-      {
-        id: "4",
-        text: "We believe formalizing this department under government oversight will provide the resources and reach needed to address this crisis effectively.",
-        sender: "me",
-        time: "9:22 AM",
-      },
-    ],
-  },
-  "2": {
-    id: "2",
-    name: "TTMBAH Leadership",
-    avatar: "T",
-    isGroup: true,
-    participants: 8,
-    messages: [
-      {
-        id: "1",
-        text: "Welcome to the TTMBAH Leadership group!",
-        sender: "admin",
-        time: "Yesterday",
-      },
-      {
-        id: "2",
-        text: "Thank you for adding me to the group. Looking forward to collaborating with everyone.",
-        sender: "me",
-        time: "Yesterday",
-      },
-      {
-        id: "3",
-        text: "Our next meeting is scheduled for Friday at 2 PM. Please prepare your department updates.",
-        sender: "James",
-        time: "Yesterday",
-      },
-    ],
-  },
-};
+import { useState } from "react";
+import { useMessages } from "@/hooks/useMessages";
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams();
   const chatId = Array.isArray(id) ? id[0] : id;
-  const chat = CHATS[chatId];
+  const { chat, messages, loading, sendMessage } = useMessages(chatId);
   
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(chat?.messages || []);
   
-  const sendMessage = () => {
+  const handleSendMessage = async () => {
     if (message.trim() === "") return;
     
-    const newMessage = {
-      id: String(messages.length + 1),
-      text: message,
-      sender: "me",
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-    
-    setMessages([...messages, newMessage]);
+    await sendMessage(message);
     setMessage("");
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={Colors.dark.tint} />
+      </View>
+    );
+  }
+
+  if (!chat) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.errorText}>Chat not found</Text>
+      </View>
+    );
+  }
   
   return (
     <>
@@ -96,9 +42,9 @@ export default function ChatScreen() {
         options={{ 
           headerTitle: () => (
             <View style={styles.headerTitle}>
-              <Text style={styles.headerName}>{chat?.name}</Text>
+              <Text style={styles.headerName}>{chat.name}</Text>
               <Text style={styles.headerStatus}>
-                {chat?.isOnline ? "Active now" : chat?.isGroup ? `${chat?.participants} participants` : "Offline"}
+                {chat.isOnline ? "Active now" : chat.isGroup ? `${chat.participants} participants` : "Offline"}
               </Text>
             </View>
           ),
@@ -177,7 +123,7 @@ export default function ChatScreen() {
               styles.sendButton,
               message.trim() === "" ? styles.sendButtonDisabled : null,
             ]}
-            onPress={sendMessage}
+            onPress={handleSendMessage}
             disabled={message.trim() === ""}
           >
             <Send size={24} color="#FFFFFF" />
@@ -192,6 +138,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.dark.background,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: Colors.dark.text,
+    fontSize: 16,
   },
   headerTitle: {
     alignItems: "center",
