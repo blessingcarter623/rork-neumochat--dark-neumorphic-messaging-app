@@ -22,6 +22,7 @@ interface AuthState {
   logout: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   setLoading: (loading: boolean) => void;
+  initialize: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,29 +31,37 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true,
+
+      initialize: () => {
+        // This will be called after hydration to set loading to false
+        const state = get();
+        set({ 
+          isLoading: false,
+          isAuthenticated: !!state.token && !!state.user 
+        });
+      },
 
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
+          // For development, simulate a successful login
           // Replace with your actual API endpoint
-          const response = await fetch('https://your-api.com/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Login failed');
-          }
-
-          const data = await response.json();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const mockUser: User = {
+            id: "1",
+            name: "Marcus Johnson",
+            email: email,
+            phone: "+27 123 456 789",
+            bio: "Entrepreneur, mentor, and community builder passionate about economic empowerment.",
+          };
+          
+          const mockToken = "mock-jwt-token-" + Date.now();
           
           set({
-            user: data.user,
-            token: data.token,
+            user: mockUser,
+            token: mockToken,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -65,24 +74,23 @@ export const useAuthStore = create<AuthState>()(
       register: async (name: string, email: string, phone: string, password: string) => {
         set({ isLoading: true });
         try {
+          // For development, simulate a successful registration
           // Replace with your actual API endpoint
-          const response = await fetch('https://your-api.com/auth/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name, email, phone, password }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Registration failed');
-          }
-
-          const data = await response.json();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const mockUser: User = {
+            id: "1",
+            name: name,
+            email: email,
+            phone: phone,
+            bio: "New member of the Amatyma community.",
+          };
+          
+          const mockToken = "mock-jwt-token-" + Date.now();
           
           set({
-            user: data.user,
-            token: data.token,
+            user: mockUser,
+            token: mockToken,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -105,23 +113,11 @@ export const useAuthStore = create<AuthState>()(
         if (!user || !token) return;
 
         try {
-          const response = await fetch(`https://your-api.com/users/${user.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(updates),
-          });
-
-          if (!response.ok) {
-            throw new Error('Profile update failed');
-          }
-
-          const updatedUser = await response.json();
+          // For development, simulate a successful update
+          await new Promise(resolve => setTimeout(resolve, 500));
           
           set({
-            user: { ...user, ...updatedUser },
+            user: { ...user, ...updates },
           });
         } catch (error) {
           throw error;
@@ -140,6 +136,12 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Initialize after hydration is complete
+        if (state) {
+          state.initialize();
+        }
+      },
     }
   )
 );
